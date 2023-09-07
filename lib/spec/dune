@@ -5,5 +5,4 @@
 
 (library
  (name spec)
- (preprocess
-  (pps ppx_deriving.show)))
+ (libraries menhirLib))

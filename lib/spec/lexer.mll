@@ -1,5 +1,12 @@
 {
   open Parser
+  exception SyntaxError of string * Lexing.position
+
+  let unexpected_char lexbuf =
+    SyntaxError (
+      "Unexpected character '" ^ Lexing.lexeme lexbuf ^ "'",
+      Lexing.lexeme_start_p lexbuf
+    )
 }
 
 let digit = ['0'-'9']
@@ -26,6 +33,7 @@ rule read_token = parse
   | '=' { EQ }
   | ';' { SEMICOLON }
   | ',' { COMMA }
+  | '"' { read_string (Buffer.create 16) lexbuf }
   | "true" { TRUE }
   | "false" { FALSE }
   | "print" { PRINT }
@@ -37,7 +45,13 @@ rule read_token = parse
   | "if" { IF }
   | "else" { ELSE }
   | int as i { INT (Int32.of_string i) }
-  | identifier as id { IDENTIFIER id }
   | identifier alphanumeric * as id { IDENTIFIER id }
-  | _ { EOF }
+  | _ { raise @@ unexpected_char lexbuf }
   | eof { EOF }
+
+and read_string buf = parse
+  | '"' { STRING (Buffer.contents buf) }
+  | [^ '"']+ { Buffer.add_string buf (Lexing.lexeme lexbuf); read_string buf lexbuf }
+  | eof { raise @@ SyntaxError
+    ("Unfinished string", Lexing.lexeme_end_p lexbuf) }
+  | _ { raise @@ unexpected_char lexbuf }

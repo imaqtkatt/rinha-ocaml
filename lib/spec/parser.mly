@@ -134,6 +134,7 @@ let sub_term :=
 
 let literal :=
   | i = INT; { Int { value = i; location = $loc; } }
+  | s = STRING; { Str { value = s; location = $loc; } }
   | TRUE; { Bool { value = true; location = $loc; } }
   | FALSE; { Bool { value = false; location = $loc; } }
   | v = var; { Var v }
