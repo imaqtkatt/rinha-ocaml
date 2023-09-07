@@ -1,0 +1,9 @@
+(ocamllex lexer)
+
+(menhir
+ (modules parser))
+
+(library
+ (name spec)
+ (preprocess
+  (pps ppx_deriving.show)))

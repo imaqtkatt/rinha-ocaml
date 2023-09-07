@@ -1,0 +1,4 @@
+p = default
+type-decl = sparse
+doc-comments = before
+break-cases = all

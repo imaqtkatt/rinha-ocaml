@@ -1,0 +1,4 @@
+(executable
+ (public_name rinha_ocaml)
+ (name main)
+ (libraries rinha_ocaml spec))
