@@ -79,7 +79,6 @@ and binary_op =
   | Gte
   | And
   | Or
-  | Not
 
 and file = {
   name : string;

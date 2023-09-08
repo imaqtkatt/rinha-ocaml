@@ -23,11 +23,20 @@
 %token RBRACE
 
 %token EQ
+
+%token EQL
+%token NEQ
 %token PLUS
 %token MIN
 %token MUL
 %token DIV
+%token REM
 %token LT
+%token GT
+%token LTE
+%token GTE
+%token AND
+%token OR
 
 %token SEMICOLON
 %token COMMA
@@ -42,10 +51,14 @@
 
 %type <Ast.binary_op> op
 
-(** TODO: make this right *)
+(** TODO: I DON'T KNOW IF THIS I RIGHT *)
+%left AND OR
+%left EQL NEQ
+%left LTE GTE
+%left LT GT
 %left PLUS MIN
 %left MUL DIV
-%left LT
+%left REM
 
 %%
 
@@ -98,6 +111,14 @@ let let_expr :=
   | MUL; { Mul }
   | DIV; { Div }
   | LT; { Lt }
+  | GT; { Gt }
+  | LTE; { Lte }
+  | GTE; { Gte }
+  | REM; { Rem }
+  | EQL; { Eq }
+  | NEQ; { Neq }
+  | AND; { And }
+  | OR; { Or }
 
 let infix :=
   | call

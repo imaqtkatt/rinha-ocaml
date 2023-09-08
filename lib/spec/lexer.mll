@@ -26,11 +26,19 @@ rule read_token = parse
   | '*' { MUL }
   | '/' { DIV }
   | '<' { LT }
+  | '>' { GT }
+  | '=' { EQ }
+  | '=' '=' { EQL }
+  | '!' '=' { NEQ }
+  | '<' '=' { LTE }
+  | '>' '=' { GTE }
+  | '&' '&' { AND }
+  | '|' '|' { OR }
+  | '%' { REM }
   | '{' { LBRACE }
   | '}' { RBRACE }
   | '(' { LPARENS }
   | ')' { RPARENS }
-  | '=' { EQ }
   | ';' { SEMICOLON }
   | ',' { COMMA }
   | '"' { read_string (Buffer.create 16) lexbuf }
