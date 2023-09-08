@@ -65,7 +65,7 @@
 file:
   | EOF; { None }
   | t = term; EOF;
-    { Some { name = ""; expression = t; location = $loc; } }
+    { Some { expression = t; location = $loc; } }
 
 (** Terms *)
 let term :=

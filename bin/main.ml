@@ -1,10 +1,14 @@
 open Spec
+open Eval.Env
+open Eval.Evaluator
 
 let src = "files/fib.rinha"
 
 let handle_parse_result = function
   | Ok None -> print_endline "Nothing"
-  | Ok (Some _) -> print_endline "Ok"
+  | Ok (Some ({ expression; _ } : Ast.file)) ->
+      let _ = eval Env.empty expression in
+      ()
   | Error msg -> print_endline msg
 
 let string_of_position (pos : Lexing.position) =

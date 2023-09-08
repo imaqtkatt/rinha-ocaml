@@ -81,7 +81,6 @@ and binary_op =
   | Or
 
 and file = {
-  name : string;
   expression : term;
   location : loc;
 }
