@@ -52,7 +52,7 @@ rule read_token = parse
   | "let" { LET }
   | "if" { IF }
   | "else" { ELSE }
-  | int as i { INT (Int32.of_string i) }
+  | int as i { INT (Int64.of_string i) }
   | identifier alphanumeric * as id { IDENTIFIER id }
   | _ { raise @@ unexpected_char lexbuf }
   | eof { EOF }

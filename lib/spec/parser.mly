@@ -3,7 +3,7 @@
 %}
 
 %token <string> IDENTIFIER
-%token <int32> INT
+%token <int64> INT
 %token <string> STRING
 %token TRUE
 %token FALSE

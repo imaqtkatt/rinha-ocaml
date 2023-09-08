@@ -72,13 +72,13 @@ and eval_binary lhs rhs op =
   let open Object in
   let v =
     match (get lhs, get rhs, op) with
-    | Int l, Int r, Add -> Int (Int32.add l r)
-    | Int l, Str r, Add -> Str (Int32.to_string l ^ r)
-    | Str l, Int r, Add -> Str (l ^ Int32.to_string r)
-    | Int l, Int r, Sub -> Int (Int32.sub l r)
-    | Int l, Int r, Mul -> Int (Int32.mul l r)
-    | Int l, Int r, Div -> Int (Int32.div l r)
-    | Int l, Int r, Eq -> Bool (Int32.equal l r)
+    | Int l, Int r, Add -> Int (Int64.add l r)
+    | Int l, Str r, Add -> Str (Int64.to_string l ^ r)
+    | Str l, Int r, Add -> Str (l ^ Int64.to_string r)
+    | Int l, Int r, Sub -> Int (Int64.sub l r)
+    | Int l, Int r, Mul -> Int (Int64.mul l r)
+    | Int l, Int r, Div -> Int (Int64.div l r)
+    | Int l, Int r, Eq -> Bool (Int64.equal l r)
     | Int l, Int r, Lt -> Bool (l < r)
     | Bool l, Bool r, Or -> Bool (Bool.( || ) l r)
     | l, r, _ ->
