@@ -1,34 +1,25 @@
 open Env
 open Spec.Ast
-open Lazyness
 
 exception EvalException of string
 
-module HashableInt = struct
-  include Int
+type eval_memo = ((string * Object.t) list, Object.t) Hashtbl.t
 
-  let hash = Hashtbl.hash
-end
-
-type fds = ((string * Object.t lazy_val) list, Object.t) Hashtbl.t
-
-let (memo : fds) = Hashtbl.create 50
+let (memo : eval_memo) = Hashtbl.create 50
 
 let rec eval env = function
-  | Int { value; _ } -> Ready (Object.Int value)
-  | Bool { value; _ } -> Ready (Object.Bool value)
-  | Str { value; _ } -> Ready (Object.Str value)
+  | Int { value; _ } -> Object.Int value
+  | Bool { value; _ } -> Object.Bool value
+  | Str { value; _ } -> Object.Str value
   | Tuple { first; second; _ } ->
-      Lazy
-        (fun () ->
-          Ready (Object.Tup (get @@ eval env first, get @@ eval env second)))
+      Object.Tup (eval env first, eval env second)
   | First { value; _ } -> (
-      match get @@ eval env value with
-      | Object.Tup (v, _) -> Ready v
+      match eval env value with
+      | Object.Tup (v, _) -> v
       | _ -> assert false)
   | Second { value; _ } -> (
-      match get @@ eval env value with
-      | Object.Tup (_, v) -> Ready v
+      match eval env value with
+      | Object.Tup (_, v) -> v
       | _ -> assert false)
   | Var { text; _ } -> (
       match Env.find_opt text env with
@@ -42,28 +33,28 @@ let rec eval env = function
       | None -> v)
   | Function { parameters; value; _ } ->
       let ps = List.map (fun p -> p.text) parameters in
-      Lazy (fun () -> Ready (Object.Fn (env, ps, value)))
+      Object.Fn (env, ps, value)
   | Print { value; _ } ->
       let o = eval env value in
-      let () = print_endline @@ Object.string_of_obj @@ get o in
+      let () = print_endline @@ Object.string_of_obj @@ o in
       o
   | If { condition; then_; otherwise; _ } -> (
-      match get @@ eval env condition with
+      match eval env condition with
       | Object.Bool b -> if b then eval env then_ else eval env otherwise
       | _ -> eval env then_)
   | Call { callee; arguments; _ } -> (
       let f = Env.find callee env in
-      match get f with
+      match f with
       | Object.Fn (closure, args, body) as f -> (
           let al = List.map (fun a -> eval env a) arguments in
           let x = List.combine args al in
-          let x = x @ [ (callee, Ready f) ] in
+          let x = x @ [ (callee, f) ] in
           match Hashtbl.find_opt memo x with
-          | Some o -> Ready o
+          | Some o -> o
           | None ->
               let closure' = Env.add_seq (List.to_seq x) closure in
               let ret = eval closure' body in
-              let _ = Hashtbl.add memo x (get ret) in
+              let _ = Hashtbl.add memo x ret in
               ret)
       | _ -> assert false)
   | Binary { lhs; op; rhs; _ } -> eval_binary (eval env lhs) (eval env rhs) op
@@ -71,7 +62,7 @@ let rec eval env = function
 and eval_binary lhs rhs op =
   let open Object in
   let v =
-    match (get lhs, get rhs, op) with
+    match (lhs, rhs, op) with
     | Int l, Int r, Add -> Int (Int64.add l r)
     | Int l, Str r, Add -> Str (Int64.to_string l ^ r)
     | Str l, Int r, Add -> Str (l ^ Int64.to_string r)
@@ -86,4 +77,4 @@ and eval_binary lhs rhs op =
         print_endline @@ string_of_obj r;
         assert false
   in
-  Ready v
+  v
