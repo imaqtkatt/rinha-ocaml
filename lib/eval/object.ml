@@ -1,4 +1,5 @@
 open Spec.Ast
+open Lazyness
 
 type t =
   | Bool of bool
@@ -7,7 +8,7 @@ type t =
   | Tup of t * t
   | Fn of closure * string list * term
 
-and closure = t Env.Env.t
+and closure = t lazy_val Env.Env.t
 
 let rec string_of_obj = function
   | Bool b -> string_of_bool b
