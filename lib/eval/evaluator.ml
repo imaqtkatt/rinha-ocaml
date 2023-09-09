@@ -3,7 +3,7 @@ open Spec.Ast
 
 exception EvalException of string
 
-type eval_memo = ((string * Object.t) list, Object.t) Hashtbl.t
+type eval_memo = (Object.t Env.t, Object.t) Hashtbl.t
 
 let (memo : eval_memo) = Hashtbl.create 50
 let fn_decls = ref Env.empty
@@ -35,7 +35,10 @@ let rec eval env t =
           let env' = Env.add text f env in
           eval env' next
       | _ ->
-          let env' = Env.add text v env in
+          let env' =
+            if String.starts_with ~prefix:"_" text then env
+            else Env.add text v env
+          in
           eval env' next)
   | Function { parameters; value; _ } ->
       let ps = List.map (fun p -> p.text) parameters in
@@ -50,7 +53,7 @@ let rec eval env t =
       | _ -> eval env then_)
   | Call { callee; arguments; _ } -> (
       match find_fun callee with
-      | Object.Fn (closure, args, body) ->
+      | Object.Fn (closure, args, body) -> (
           let x = List.combine args arguments in
           let argument_list =
             List.map
@@ -59,26 +62,38 @@ let rec eval env t =
               x
           in
           let closure' =
-            List.fold_left (fun m (k, v) -> Env.add k v m) closure argument_list
+            List.fold_left
+              (fun m (k, v) -> Env.add k v m)
+              closure argument_list
           in
-          eval closure' body
+          match Hashtbl.find_opt memo closure' with
+          | Some o -> o
+          | None ->
+              let ret = eval closure' body in
+              Hashtbl.add memo closure' ret;
+              ret)
       | _ -> assert false)
   | Binary { lhs; op; rhs; _ } -> eval_binary (eval env lhs) (eval env rhs) op
 
 and eval_binary lhs rhs op =
   let open Object in
-  match (lhs, rhs, op) with
-  | Int l, Int r, Add -> Int (Int64.add l r)
-  | Int l, Str r, Add -> Str (Int64.to_string l ^ r)
-  | Str l, Int r, Add -> Str (l ^ Int64.to_string r)
-  | Int l, Int r, Sub -> Int (Int64.sub l r)
-  | Int l, Int r, Mul -> Int (Int64.mul l r)
-  | Int l, Int r, Div -> Int (Int64.div l r)
-  | Int l, Int r, Eq -> Bool (Int64.equal l r)
-  | Int l, Int r, Lte -> Bool (l <= r)
-  | Int l, Int r, Lt -> Bool (l < r)
-  | Bool l, Bool r, Or -> Bool (Bool.( || ) l r)
-  | l, r, _ ->
+  match (op, lhs, rhs) with
+  | Add, Int l, Int r -> Int (Int64.add l r)
+  | Add, Int l, Str r -> Str (Int64.to_string l ^ r)
+  | Add, Str l, Int r -> Str (l ^ Int64.to_string r)
+  | Sub, Int l, Int r -> Int (Int64.sub l r)
+  | Mul, Int l, Int r -> Int (Int64.mul l r)
+  | Div, Int l, Int r -> Int (Int64.div l r)
+  | Eq, Int l, Int r -> Bool (Int64.equal l r)
+  | Eq, Bool l, Bool r -> Bool (Bool.equal l r)
+  | Eq, Str l, Str r -> Bool (String.equal l r)
+  | Lte, Int l, Int r -> Bool (l <= r)
+  | Lt, Int l, Int r -> Bool (l < r)
+  | Gte, Int l, Int r -> Bool (l >= r)
+  | Gt, Int l, Int r -> Bool (l > r)
+  | Or, Bool l, Bool r -> Bool (Bool.( || ) l r)
+  | And, Bool l, Bool r -> Bool (Bool.( && ) l r)
+  | _, l, r ->
       print_endline @@ string_of_obj l;
       print_endline @@ string_of_obj r;
       assert false
