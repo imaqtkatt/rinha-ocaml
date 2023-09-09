@@ -15,7 +15,7 @@ type term =
   | Let of {
       name : var;
       value : term;
-      next : term option;
+      next : term;
       location : loc;
     }
   | Str of {
@@ -37,7 +37,7 @@ type term =
       location : loc;
     }
   | Call of {
-      callee : string;
+      callee : term;
       arguments : term list;
       location : loc;
     }

@@ -2,8 +2,6 @@ open Spec
 open Eval.Env
 open Eval.Evaluator
 
-let src = "files/fib.rinha"
-
 let handle_parse_result = function
   | Ok None -> print_endline "Nothing"
   | Ok (Some ({ expression; _ } : Ast.file)) ->
@@ -21,6 +19,7 @@ let string_pos_of_lexbuf (lexbuf : Lexing.lexbuf) =
     (string_of_position st) (string_of_position ed)
 
 let () =
+  let src = Sys.argv.(1) in
   let channel = In_channel.open_bin src in
   let lexbuf = Lexing.from_channel channel in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = src };

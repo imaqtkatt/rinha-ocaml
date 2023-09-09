@@ -52,12 +52,12 @@
 %type <Ast.binary_op> op
 
 (** TODO: I DON'T KNOW IF THIS I RIGHT *)
+%left PLUS MIN
+%left MUL DIV
 %left AND OR
 %left EQL NEQ
 %left LTE GTE
 %left LT GT
-%left PLUS MIN
-%left MUL DIV
 %left REM
 
 %%
@@ -97,8 +97,7 @@ let fn :=
 
 (** Let expr *)
 let next_let ==
-  | EOF; { None }
-  | SEMICOLON; n = term; { Some n }
+  | SEMICOLON; n = term; { n }
 
 let let_expr :=
   | LET; v = var; EQ; t = term; n = next_let;
@@ -145,7 +144,7 @@ let builtin ==
 
 let call :=
   | sub_term
-  | i = IDENTIFIER; LPARENS; args = separated_list(COMMA, term); RPARENS;
+  | i = call; LPARENS; args = separated_list(COMMA, term); RPARENS;
     { Call { callee = i; arguments = args; location = $loc; } }
 
 (** Literals *)

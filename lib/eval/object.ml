@@ -13,5 +13,5 @@ let rec string_of_obj = function
   | Bool b -> string_of_bool b
   | Int i -> Int64.to_string i
   | Str s -> s
-  | Tup (l, r) -> "(" ^ string_of_obj l ^ " " ^ string_of_obj r ^ ")"
-  | Fn (_, _, _) -> "<function>"
+  | Tup (l, r) -> "(" ^ string_of_obj l ^ ", " ^ string_of_obj r ^ ")"
+  | Fn (_, _, _) -> "<#closure>"
