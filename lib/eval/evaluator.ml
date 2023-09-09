@@ -6,6 +6,11 @@ exception EvalException of string
 type eval_memo = ((string * Object.t) list, Object.t) Hashtbl.t
 
 let (memo : eval_memo) = Hashtbl.create 50
+let fn_decls = ref Env.empty
+
+let find_fun = function
+  | Var { text; _ } -> Env.find text !fn_decls
+  | _ -> assert false
 
 let rec eval env t =
   match t with
@@ -22,10 +27,16 @@ let rec eval env t =
       match eval env value with
       | Object.Tup (_, v) -> v
       | _ -> assert false)
-  | Let { name = { text; _ }; value; next; _ } ->
+  | Let { name = { text; _ }; value; next; _ } -> (
       let v = eval env value in
-      let env' = Env.add text v env in
-      eval env' next
+      match v with
+      | Object.Fn _ as f ->
+          fn_decls := Env.add text f !fn_decls;
+          let env' = Env.add text f env in
+          eval env' next
+      | _ ->
+          let env' = Env.add text v env in
+          eval env' next)
   | Function { parameters; value; _ } ->
       let ps = List.map (fun p -> p.text) parameters in
       Object.Fn (env, ps, value)
@@ -38,7 +49,7 @@ let rec eval env t =
       | Object.Bool b -> if b then eval env then_ else eval env otherwise
       | _ -> eval env then_)
   | Call { callee; arguments; _ } -> (
-      match eval env callee with
+      match find_fun callee with
       | Object.Fn (closure, args, body) ->
           let x = List.combine args arguments in
           let argument_list =
