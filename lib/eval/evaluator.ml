@@ -18,53 +18,36 @@ let rec eval env t =
   | Int { value; _ } -> Object.Int value
   | Bool { value; _ } -> Object.Bool value
   | Str { value; _ } -> Object.Str value
-  | Tuple { first; second; _ } -> Object.Tup (eval env first, eval env second)
-  | First { value; _ } -> (
-      match eval env value with
-      | Object.Tup (v, _) -> v
-      | _ -> assert false)
-  | Second { value; _ } -> (
-      match eval env value with
-      | Object.Tup (_, v) -> v
-      | _ -> assert false)
+  | Tuple { first; second; _ } -> eval_tup env first second
+  | First { value; _ } -> eval_fst value env eval
+  | Second { value; _ } -> eval_snd value env eval
   | Let { name = { text; _ }; value; next; _ } -> (
-      let v = eval env value in
-      match v with
+      match eval env value with
       | Object.Fn _ as f ->
-          fn_decls := Env.add text f !fn_decls;
-          let env' = Env.add text f env in
+          let env' =
+            if String.starts_with ~prefix:"_" text then env
+            else (
+              fn_decls := Env.add text f !fn_decls;
+              Env.add text f env)
+          in
           eval env' next
-      | _ ->
+      | _ as v ->
           let env' =
             if String.starts_with ~prefix:"_" text then env
             else Env.add text v env
           in
           eval env' next)
-  | Function { parameters; value; _ } ->
-      let ps = List.map (fun p -> p.text) parameters in
-      Object.Fn (env, ps, value)
-  | Print { value; _ } ->
-      let o = eval env value in
-      let () = print_endline @@ Object.string_of_obj @@ o in
-      o
-  | If { condition; then_; otherwise; _ } -> (
-      match eval env condition with
-      | Object.Bool b -> if b then eval env then_ else eval env otherwise
-      | _ -> eval env then_)
+  | Function { parameters; value; _ } -> eval_fn value env parameters
+  | Print { value; _ } -> eval_print value env eval
+  | If { condition; then_; otherwise; _ } ->
+      eval_if env condition then_ otherwise
   | Call { callee; arguments; _ } -> (
       match find_fun callee with
       | Object.Fn (closure, args, body) -> (
-          let x = List.combine args arguments in
-          let argument_list =
-            List.map
-              (function
-                | s, t -> (s, eval env t))
-              x
-          in
           let closure' =
-            List.fold_left
-              (fun m (k, v) -> Env.add k v m)
-              closure argument_list
+            List.combine args arguments
+            |> List.map (function s, term -> (s, eval env term))
+            |> List.fold_left (fun env (s, obj) -> Env.add s obj env) closure
           in
           match Hashtbl.find_opt memo closure' with
           | Some o -> o
@@ -74,6 +57,32 @@ let rec eval env t =
               ret)
       | _ -> assert false)
   | Binary { lhs; op; rhs; _ } -> eval_binary (eval env lhs) (eval env rhs) op
+
+and eval_tup env f s = Object.Tup (eval env f, eval env s)
+
+and eval_fst value env eval =
+  match eval env value with
+  | Object.Tup (v, _) -> v
+  | _ -> assert false
+
+and eval_snd value env eval =
+  match eval env value with
+  | Object.Tup (_, v) -> v
+  | _ -> assert false
+
+and eval_fn value env parameters =
+  let ps = List.map (fun p -> p.text) parameters in
+  Object.Fn (env, ps, value)
+
+and eval_print value env eval =
+  let o = eval env value in
+  let () = print_endline @@ Object.string_of_obj @@ o in
+  o
+
+and eval_if env condition then_ otherwise =
+  match eval env condition with
+  | Object.Bool b -> if b then eval env then_ else eval env otherwise
+  | _ -> eval env then_
 
 and eval_binary lhs rhs op =
   let open Object in
