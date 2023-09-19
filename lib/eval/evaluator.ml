@@ -3,9 +3,6 @@ open Spec.Ast
 
 exception EvalException of string
 
-type eval_memo = (Object.t Env.t, Object.t) Hashtbl.t
-
-let (memo : eval_memo) = Hashtbl.create 50
 let fn_decls = ref Env.empty
 
 let find_fun = function
@@ -14,7 +11,10 @@ let find_fun = function
 
 let rec eval env t =
   match t with
-  | Var { text; _ } -> Env.find text env
+  | Var { text; _ } as v -> (
+      match Env.find_opt text env with
+      | Some o -> o
+      | None -> find_fun v)
   | Int { value; _ } -> Object.Int value
   | Bool { value; _ } -> Object.Bool value
   | Str { value; _ } -> Object.Str value
@@ -42,19 +42,14 @@ let rec eval env t =
   | If { condition; then_; otherwise; _ } ->
       eval_if env condition then_ otherwise
   | Call { callee; arguments; _ } -> (
-      match find_fun callee with
-      | Object.Fn (closure, args, body) -> (
+      match eval env callee with
+      | Object.Fn (closure, args, body) ->
           let closure' =
             List.combine args arguments
             |> List.map (function s, term -> (s, eval env term))
             |> List.fold_left (fun env (s, obj) -> Env.add s obj env) closure
           in
-          match Hashtbl.find_opt memo closure' with
-          | Some o -> o
-          | None ->
-              let ret = eval closure' body in
-              Hashtbl.add memo closure' ret;
-              ret)
+          eval closure' body
       | _ -> assert false)
   | Binary { lhs; op; rhs; _ } -> eval_binary (eval env lhs) (eval env rhs) op
 
@@ -87,13 +82,13 @@ and eval_if env condition then_ otherwise =
 and eval_binary lhs rhs op =
   let open Object in
   match (op, lhs, rhs) with
-  | Add, Int l, Int r -> Int (Int64.add l r)
-  | Add, Int l, Str r -> Str (Int64.to_string l ^ r)
-  | Add, Str l, Int r -> Str (l ^ Int64.to_string r)
-  | Sub, Int l, Int r -> Int (Int64.sub l r)
-  | Mul, Int l, Int r -> Int (Int64.mul l r)
-  | Div, Int l, Int r -> Int (Int64.div l r)
-  | Eq, Int l, Int r -> Bool (Int64.equal l r)
+  | Add, Int l, Int r -> Int (Int32.add l r)
+  | Add, Int l, Str r -> Str (Int32.to_string l ^ r)
+  | Add, Str l, Int r -> Str (l ^ Int32.to_string r)
+  | Sub, Int l, Int r -> Int (Int32.sub l r)
+  | Mul, Int l, Int r -> Int (Int32.mul l r)
+  | Div, Int l, Int r -> Int (Int32.div l r)
+  | Eq, Int l, Int r -> Bool (Int32.equal l r)
   | Eq, Bool l, Bool r -> Bool (Bool.equal l r)
   | Eq, Str l, Str r -> Bool (String.equal l r)
   | Lte, Int l, Int r -> Bool (l <= r)

@@ -27,7 +27,7 @@ type term =
       location : loc;
     }
   | Int of {
-      value : int64;
+      value : int32;
       location : loc;
     }
   | Binary of {
