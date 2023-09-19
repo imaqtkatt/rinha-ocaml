@@ -14,5 +14,4 @@
  (depends
   (ocaml (= 5.0.0))
   (dune (>= 3.10))
-  menhir
-  (ppx_deriving (= 5.2.1))))
+  menhir))
