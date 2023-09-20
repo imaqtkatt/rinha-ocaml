@@ -1,2 +1,3 @@
 (library
- (name rinha_ocaml))
+ (name rinha_ocaml)
+ (public_name rinha_ocaml))

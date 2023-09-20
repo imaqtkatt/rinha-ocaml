@@ -3,7 +3,7 @@ open Eval.Env
 open Eval.Evaluator
 
 let handle_parse_result = function
-  | Ok None -> print_endline "Nothing"
+  | Ok None -> ()
   | Ok (Some ({ expression; _ } : Ast.file)) ->
       let _ = eval Env.empty expression in
       ()

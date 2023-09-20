@@ -12,6 +12,6 @@
 (package
  (name rinha_ocaml)
  (depends
-  (ocaml (= 5.0.0))
+  (ocaml (>= 5.0.0))
   (dune (>= 3.10))
   menhir))

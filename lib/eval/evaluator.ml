@@ -11,16 +11,16 @@ let find_fun = function
 
 let rec eval env t =
   match t with
-  | Var { text; _ } as v -> (
+  | Var { text; _ } -> (
       match Env.find_opt text env with
       | Some o -> o
-      | None -> find_fun v)
+      | None -> find_fun t)
   | Int { value; _ } -> Object.Int value
   | Bool { value; _ } -> Object.Bool value
   | Str { value; _ } -> Object.Str value
   | Tuple { first; second; _ } -> eval_tup env first second
-  | First { value; _ } -> eval_fst value env eval
-  | Second { value; _ } -> eval_snd value env eval
+  | First { value; _ } -> eval_fst env value
+  | Second { value; _ } -> eval_snd env value
   | Let { name = { text; _ }; value; next; _ } -> (
       match eval env value with
       | Object.Fn _ as f ->
@@ -31,14 +31,14 @@ let rec eval env t =
               Env.add text f env)
           in
           eval env' next
-      | _ as v ->
+      | _ as value ->
           let env' =
             if String.starts_with ~prefix:"_" text then env
-            else Env.add text v env
+            else Env.add text value env
           in
           eval env' next)
   | Function { parameters; value; _ } -> eval_fn value env parameters
-  | Print { value; _ } -> eval_print value env eval
+  | Print { value; _ } -> eval_print value env
   | If { condition; then_; otherwise; _ } ->
       eval_if env condition then_ otherwise
   | Call { callee; arguments; _ } -> (
@@ -55,12 +55,12 @@ let rec eval env t =
 
 and eval_tup env f s = Object.Tup (eval env f, eval env s)
 
-and eval_fst value env eval =
+and eval_fst env value =
   match eval env value with
   | Object.Tup (v, _) -> v
   | _ -> assert false
 
-and eval_snd value env eval =
+and eval_snd env value =
   match eval env value with
   | Object.Tup (_, v) -> v
   | _ -> assert false
@@ -69,7 +69,7 @@ and eval_fn value env parameters =
   let ps = List.map (fun p -> p.text) parameters in
   Object.Fn (env, ps, value)
 
-and eval_print value env eval =
+and eval_print value env =
   let o = eval env value in
   let () = print_endline @@ Object.string_of_obj @@ o in
   o
@@ -91,13 +91,13 @@ and eval_binary lhs rhs op =
   | Eq, Int l, Int r -> Bool (Int32.equal l r)
   | Eq, Bool l, Bool r -> Bool (Bool.equal l r)
   | Eq, Str l, Str r -> Bool (String.equal l r)
+  | Neq, Int l, Int r -> Bool (not @@ Int32.equal l r)
+  | Neq, Bool l, Bool r -> Bool (not @@ Bool.equal l r)
+  | Neq, Str l, Str r -> Bool (not @@ String.equal l r)
   | Lte, Int l, Int r -> Bool (l <= r)
   | Lt, Int l, Int r -> Bool (l < r)
   | Gte, Int l, Int r -> Bool (l >= r)
   | Gt, Int l, Int r -> Bool (l > r)
   | Or, Bool l, Bool r -> Bool (Bool.( || ) l r)
   | And, Bool l, Bool r -> Bool (Bool.( && ) l r)
-  | _, l, r ->
-      print_endline @@ string_of_obj l;
-      print_endline @@ string_of_obj r;
-      assert false
+  | _, _l, _r -> assert false
