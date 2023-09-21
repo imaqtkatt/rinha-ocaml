@@ -100,4 +100,5 @@ and eval_binary lhs rhs op =
   | Gt, Int l, Int r -> Bool (l > r)
   | Or, Bool l, Bool r -> Bool (Bool.( || ) l r)
   | And, Bool l, Bool r -> Bool (Bool.( && ) l r)
+  | Rem, Int l, Int r -> Int (Int32.rem l r)
   | _, _l, _r -> assert false
