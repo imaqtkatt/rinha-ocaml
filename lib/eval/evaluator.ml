@@ -85,6 +85,7 @@ and eval_binary lhs rhs op =
   | Add, Int l, Int r -> Int (Int32.add l r)
   | Add, Int l, Str r -> Str (Int32.to_string l ^ r)
   | Add, Str l, Int r -> Str (l ^ Int32.to_string r)
+  | Add, Str l, Str r -> Str (l ^ r)
   | Sub, Int l, Int r -> Int (Int32.sub l r)
   | Mul, Int l, Int r -> Int (Int32.mul l r)
   | Div, Int l, Int r -> Int (Int32.div l r)

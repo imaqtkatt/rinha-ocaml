@@ -1,9 +1,11 @@
-let fib = fn (n) => {
+let _ = print("@!compile::");
+
+let fibbo = fn (n) => {
   if (n < 2) {
     n
   } else {
-    fib(n - 1) + fib(n - 2)
+    fibbo(n - 1) + fibbo(n - 2)
   }
 };
 
-print(fib(37))
+print("@!fibbo::" + fibbo(35) + "")
