@@ -3,6 +3,27 @@ open Spec.Ast
 
 exception EvalException of string
 
+let term_typ = function
+  | Int _ -> "Int"
+  | Str _ -> "Str"
+  | Bool _ -> "Bool"
+  | Tuple _ -> "Tuple"
+  | Function _ -> "Function"
+  | _ -> assert false
+
+let obj_typ = function
+  | Object.Int _ -> "Int"
+  | Object.Str _ -> "Str"
+  | Object.Bool _ -> "Bool"
+  | Object.Tup _ -> "Tuple"
+  | Object.Fn _ -> "Function"
+
+let typ_mismatch t1 t2 =
+  raise @@ EvalException ("Expected " ^ t1 ^ ", received " ^ t2)
+
+let unsupported_op t1 t2 =
+  raise @@ EvalException ("Unsupported operation between " ^ t1 ^ " and " ^ t2)
+
 let fn_decls = ref Env.empty
 
 let find_fun = function
@@ -42,7 +63,8 @@ let rec eval env t =
   | If { condition; then_; otherwise; _ } ->
       eval_if env condition then_ otherwise
   | Call { callee; arguments; _ } -> (
-      match eval env callee with
+      let e = eval env callee in
+      match e with
       | Object.Fn (closure, args, body) ->
           let closure' =
             List.combine args arguments
@@ -50,7 +72,7 @@ let rec eval env t =
             |> List.fold_left (fun env (s, obj) -> Env.add s obj env) closure
           in
           eval closure' body
-      | _ -> assert false)
+      | _ -> typ_mismatch "Function" @@ obj_typ e)
   | Binary { lhs; op; rhs; _ } -> eval_binary (eval env lhs) (eval env rhs) op
 
 and eval_tup env f s = Object.Tup (eval env f, eval env s)
@@ -58,12 +80,12 @@ and eval_tup env f s = Object.Tup (eval env f, eval env s)
 and eval_fst env value =
   match eval env value with
   | Object.Tup (v, _) -> v
-  | _ -> assert false
+  | _ -> typ_mismatch "Tuple" @@ term_typ value
 
 and eval_snd env value =
   match eval env value with
   | Object.Tup (_, v) -> v
-  | _ -> assert false
+  | _ -> typ_mismatch "Tuple" @@ term_typ value
 
 and eval_fn value env parameters =
   let ps = List.map (fun p -> p.text) parameters in
@@ -102,4 +124,4 @@ and eval_binary lhs rhs op =
   | Or, Bool l, Bool r -> Bool (Bool.( || ) l r)
   | And, Bool l, Bool r -> Bool (Bool.( && ) l r)
   | Rem, Int l, Int r -> Int (Int32.rem l r)
-  | _, _l, _r -> assert false
+  | _, l, r -> unsupported_op (obj_typ l) (obj_typ r)
