@@ -3,9 +3,17 @@ let _ = print("@!compile::");
 let fibbo = fn (n) => {
   if (n < 2) {
     n
-  } else {
+  } else { //sdfdsfsd
     fibbo(n - 1) + fibbo(n - 2)
   }
 };
+/* fdsfdsfds */
+
+// comentarios sao cringe
+
+/* asdljfkslk
+  /* oioiioioioioiioio
+  */
+*/
 
 print("@!fibbo::" + fibbo(35) + "")
